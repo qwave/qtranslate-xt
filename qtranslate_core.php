@@ -121,7 +121,7 @@ function qtranxf_init_language() {
     do_action( 'qtranslate_load_front_admin', $url_info );
 
     if ( $q_config['url_info']['doing_front_end'] ) {
-        require_once( QTRANSLATE_DIR . '/qtranslate_frontend.php' );
+        //require_once( QTRANSLATE_DIR . '/qtranslate_frontend.php' );
     } else {
         require_once( QTRANSLATE_DIR . '/admin/qtx_admin.php' );
     }

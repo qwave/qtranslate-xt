@@ -12,7 +12,7 @@ function qtranxf_get_front_page_config() {
     }
 
     global $q_config;
-    $url_path  = $q_config['url_info']['wp-path'];
+    $url_path  = isset( $q_config['url_info']['wp-path'] ) ? $q_config['url_info']['wp-path'] : '';
     $url_query = isset( $q_config['url_info']['query'] ) ? $q_config['url_info']['query'] : '';
 
     $front_config = $q_config['front_config'];

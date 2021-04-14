@@ -1,4 +1,6 @@
-(function ($) {
+const $ = jQuery;
+
+const register_fields = () => {
     acf.registerFieldType(acf.models.FileField.extend({
         type: 'qtranslate_file',
 
@@ -28,7 +30,7 @@
             this.$control().find('[data-name="filesize"]').text(attachment.filesizeHumanReadable);
 
             // vars
-            var val = attachment.id || '';
+            const val = attachment.id || '';
 
             // update val
             acf.val(this.$input(), val);
@@ -67,7 +69,7 @@
             });
 
             // vars
-            var val = attachment.id || '';
+            const val = attachment.id || '';
 
             // update val
             this.val(val);
@@ -90,10 +92,10 @@
         },
 
         initialize: function () {
-            var self = this;
+            const self = this;
 
             // vars
-            var $select = this.$input();
+            const $select = this.$input();
 
             // inherit data
             this.inherit($select);
@@ -102,7 +104,7 @@
             if (this.get('ui')) {
 
                 // populate ajax_data (allowing custom attribute to already exist)
-                var ajaxAction = this.get('ajax_action');
+                let ajaxAction = this.get('ajax_action');
                 if (!ajaxAction) {
                     ajaxAction = 'acf/fields/' + this.get('type') + '/query';
                 }
@@ -124,7 +126,7 @@
 
         onRemove: function () {
             if (this.select2) {
-                for (var i = 0; i < this.select2.length; i++) {
+                for (let i = 0; i < this.select2.length; i++) {
                     this.select2[i].destroy();
                 }
             }
@@ -149,11 +151,11 @@
         type: 'qtranslate_wysiwyg',
 
         initializeEditor: function () {
-            var self = this;
+            const self = this;
             this.$('.acf-editor-wrap').each(function () {
-                var $wrap = $(this);
-                var $textarea = $wrap.find('textarea');
-                var args = {
+                const $wrap = $(this);
+                const $textarea = $wrap.find('textarea');
+                const args = {
                     tinymce: true,
                     quicktags: true,
                     toolbar: self.get('toolbar'),
@@ -162,8 +164,8 @@
                 };
 
                 // generate new id
-                var oldId = $textarea.attr('id');
-                var newId = acf.uniqueId('acf-editor-');
+                const oldId = $textarea.attr('id');
+                const newId = acf.uniqueId('acf-editor-');
 
                 // rename
                 acf.rename({
@@ -181,4 +183,6 @@
             });
         }
     }));
-})(jQuery);
+};
+
+register_fields();

@@ -1,44 +1,43 @@
 /* executed for 
  /wp-admin/edit-tags.php (without action=edit)
 */
+const $ = jQuery;
 
-(function ($) {
-    $(function () {
-        var qtx = qTranslateConfig.js.get_qtx();
+$(function () {
+    const qtx = qTranslateConfig.js.get_qtx();
 
-        var addDisplayHook = function (i, o) {
-            qtx.addDisplayHook(o);
-        };
+    const addDisplayHook = function (i, e) {
+        qtx.addDisplayHook(e);
+    };
 
-        var updateRow = function (r) {
-            var j = $(r);
-            j.find('.row-title, .description').each(addDisplayHook);
-            j.find('td.name span.inline').css('display', 'none');
-        };
+    const updateRow = function (row) {
+        const $row = $(row);
+        $row.find('.row-title, .description').each(addDisplayHook);
+        $row.find('td.name span.inline').css('display', 'none');
+    };
 
-        var the_list = $('#the-list');
-        var rcnt = $('#the-list > tr').length;
+    const $theList = $('#the-list');
+    let nbRows = $('#the-list > tr').length;
 
-        var onRowAdd = function () {
-            var trs = the_list.children();
-            if (rcnt === trs.length)
-                return false;
-            var ok = rcnt > trs.length;
-            rcnt = trs.length;
-            if (ok)
-                return false;
-            for (var i = 0; i < trs.length; ++i) {
-                var r = trs[i];
-                updateRow(r);
-            }
+    const onRowAdd = function () {
+        const $rows = $theList.children();
+        if (nbRows === $rows.length)
             return false;
-        };
+        const ok = nbRows > $rows.length;
+        nbRows = $rows.length;
+        if (ok)
+            return false;
+        for (let i = 0; i < $rows.length; ++i) {
+            const row = $rows[i];
+            updateRow(row);
+        }
+        return false;
+    };
 
-        the_list.each(function (i, o) {
-            $(o).bind("DOMSubtreeModified", onRowAdd);
-        });
-
-        // remove "Quick Edit" links for now
-        $('#the-list > tr > td.name span.inline').css('display', 'none');
+    $theList.each(function (i, e) {
+        $(e).bind("DOMSubtreeModified", onRowAdd);
     });
-})(jQuery);
+
+    // remove "Quick Edit" links for now
+    $('#the-list > tr > td.name span.inline').css('display', 'none');
+});

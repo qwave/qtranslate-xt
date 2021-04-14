@@ -1,28 +1,28 @@
-(function ($) {
-    $(function () {
-        $('.notice-dismiss, .qtranxs-notice-dismiss').each(
-            function () {
-                var q = $(this);
-                var d = q.closest('div.is-dismissible');
-                if (!d.length)
+const $ = jQuery;
+
+$(function () {
+    $('.notice-dismiss, .qtranxs-notice-dismiss').each(
+        function () {
+            const $notice = $(this);
+            const $div = $notice.closest('div.is-dismissible');
+            if (!$div.length)
+                return;
+            if (!$notice.hasClass('qtranxs-notice-dismiss')) {
+                const $dismiss = $div.find('.qtranxs-notice-dismiss');
+                if (!$dismiss.length)
                     return;
-                if (!q.hasClass('qtranxs-notice-dismiss')) {
-                    var f = d.find('.qtranxs-notice-dismiss');
-                    if (!f.length)
-                        return;
-                }
-                var id = d.attr('id');
-                if (!id)
-                    return;
-                id = id.replace('qtranxs-', '');
-                var action = d.attr('action');
-                q.on('click',
-                    function () {
-                        d.css('display', 'none');
-                        $.post(ajaxurl, {action: 'qtranslate_admin_notice', notice_id: id, notice_action: action});
-                    }
-                );
             }
-        );
-    });
-}(jQuery));
+            let id = $div.attr('id');
+            if (!id)
+                return;
+            id = id.replace('qtranxs-', '');
+            const action = $div.attr('action');
+            $notice.on('click',
+                function () {
+                    $div.css('display', 'none');
+                    $.post(ajaxurl, {action: 'qtranslate_admin_notice', notice_id: id, notice_action: action});
+                }
+            );
+        }
+    );
+});

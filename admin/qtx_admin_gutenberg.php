@@ -58,6 +58,9 @@ class QTX_Admin_Gutenberg {
             return $response;
         }
 
+        // See https://github.com/WordPress/gutenberg/issues/14012#issuecomment-467015362
+        require_once( ABSPATH . 'wp-admin/includes/post.php' );
+
         if ( ! use_block_editor_for_post( $post ) ) {
             return $response;
         }
@@ -157,12 +160,11 @@ class QTX_Admin_Gutenberg {
      * Enqueue the JS script
      */
     public function enqueue_block_editor_assets() {
-        $script_file = 'js/lib/editor-gutenberg.js';
         wp_register_script(
             'qtx-gutenberg',
-            plugins_url( $script_file, __FILE__ ),
+            plugins_url( 'dist/editor-gutenberg.js', QTRANSLATE_FILE ),
             array(),
-            filemtime( plugin_dir_path( __FILE__ ) . $script_file ),
+            QTX_VERSION,
             true
         );
         wp_enqueue_script( 'qtx-gutenberg' );

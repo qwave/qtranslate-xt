@@ -48,7 +48,6 @@ function qtranxf_error_log( $msg ) {
  * @since 3.5.1
  */
 function qtranxf_enqueue_scripts( $jss ) {
-    $dbg  = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG;
     $cnt  = 0;
     $deps = array();
     foreach ( $jss as $key => $js ) {
@@ -56,11 +55,7 @@ function qtranxf_enqueue_scripts( $jss ) {
             $handle = isset( $js['handle'] ) ? $js['handle'] : ( is_string( $key ) ? $key : 'qtranslate-admin-js-' . ( ++ $cnt ) );
             $src    = $js['src'];
             $ver    = isset( $js['ver'] ) ? $js['ver'] : QTX_VERSION;
-            if ( $dbg ) {
-                $src = str_replace( '.min.js', '.js', $src );
-                $ver .= '.' . filemtime( WP_CONTENT_DIR . '/' . $src );    // prevent cache issues in debug mode (.js file changes for same version)
-            }
-            $url = content_url( $src );
+            $url    = content_url( $src );
             if ( isset( $js['deps'] ) ) {
                 $deps = array_merge( $deps, $js['deps'] );
             }
@@ -532,9 +527,9 @@ function qtranxf_admin_debug_info() {
 
         $info['configuration'] = $q_config;
         // clear config information, too verbose and generally irrelevant
-        unset($info['configuration']['front_config']);
-        unset($info['configuration']['admin_config']);
-        unset($info['configuration']['i18n-cache']);
+        unset( $info['configuration']['front_config'] );
+        unset( $info['configuration']['admin_config'] );
+        unset( $info['configuration']['i18n-cache'] );
 
         $plugins         = get_option( 'active_plugins' );
         $plugin_versions = array();

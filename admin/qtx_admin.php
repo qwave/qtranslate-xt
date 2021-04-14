@@ -324,7 +324,7 @@ function qtranxf_get_admin_page_config_post_type( $post_type ) {
             unset( $page_config['js-conf'] );
         }
 
-        $page_config['js'][] = array( 'handle' => 'qtranslate-admin-common', 'src' => './admin/js/common.min.js' );
+        $page_config['js'][] = array( 'handle' => 'qtranslate-admin-main', 'src' => './dist/main.js' );
 
         if ( isset( $page_config['js-exec'] ) ) {
             foreach ( $page_config['js-exec'] as $key => $js ) {
@@ -487,16 +487,10 @@ function qtranxf_add_admin_footer_js() {
 }
 
 function qtranxf_add_admin_head_js( $enqueue_script = true ) {
-    if ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) {
-        $js_options = 'js/options.js';
-        $version    = filemtime( __DIR__ . '/' . $js_options );
-    } else {
-        $js_options = 'js/options.min.js';
-        $version    = QTX_VERSION;
-    }
+    $js_options = 'dist/options.js';
+    $version    = filemtime( QTRANSLATE_DIR . '/' . $js_options );
     if ( $enqueue_script ) {
-
-        wp_enqueue_script( 'qtranslate-admin-options', plugins_url( $js_options, __FILE__ ), array(), $version );
+        wp_enqueue_script( 'qtranslate-admin-options', plugins_url( $js_options, QTRANSLATE_FILE ), array(), $version );
     } else {
         echo '<script type="text/javascript">' . PHP_EOL . '// <![CDATA[' . PHP_EOL;
         $plugin_dir_path = plugin_dir_path( __FILE__ );
@@ -858,6 +852,22 @@ function qtranxf_admin_footer_update( $text ) {
     return $text;
 }
 
+/**
+ * Initialize qTranslate qtx in JS to set the content hooks just before the call to tinymce.init.
+ * This anticipated qtx init sequence runs before the usual ready/load events, but still in the footer so the content is
+ * supposed to be available for a proper initialization of qTranslate.
+ */
+function qtranxf_admin_tiny_mce_init( $mce_settings ) {
+    if ( isset( $mce_settings ) ):
+        ?>
+        <script type="text/javascript">
+            if (window.qTranslateConfig !== undefined && window.qTranslateConfig.js !== undefined)
+                window.qTranslateConfig.js.get_qtx();
+        </script>
+    <?php
+    endif;
+}
+
 function qtranxf_admin_load() {
     qtranxf_admin_loadConfig();
 
@@ -881,6 +891,7 @@ function qtranxf_admin_load() {
     add_action( 'admin_footer', 'qtranxf_admin_footer', 999 );
     add_filter( 'admin_footer_text', 'qtranxf_admin_footer_text', 99 );
     add_filter( 'update_footer', 'qtranxf_admin_footer_update', 99 );
+    add_action( 'wp_tiny_mce_init', 'qtranxf_admin_tiny_mce_init' );
 
     // after POST & GET are set, and before all WP objects are created, alternatively can use action 'setup_theme' instead.
     add_action( 'sanitize_comment_cookies', 'qtranxf_decode_translations_posted', 5 );

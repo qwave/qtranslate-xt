@@ -19,7 +19,7 @@ class acf_qtranslate_acf_5 implements acf_qtranslate_acf_interface {
         $this->plugin = $plugin;
 
         // a higher priority is needed for custom admin options (ACF PRO)
-        add_filter( 'acf/format_value', array( $this, 'format_value' ), 5 ); 
+        add_filter( 'acf/format_value', array( $this, 'format_value' ), 5, 3 ); 
         add_action( 'acf/include_fields', array( $this, 'include_fields' ), 5 );
     }
 
@@ -54,9 +54,13 @@ class acf_qtranslate_acf_5 implements acf_qtranslate_acf_interface {
      *
      * @return array|mixed|string|void
      */
-    public function format_value( $value ) {
+    public function format_value( $value, $post_id, $field ) {
         if ( is_string( $value ) ) {
-            $value = qtranxf_useCurrentLanguageIfNotFoundShowEmpty( $value );
+            if ( $field['type'] === 'qtranslate_image' ) {
+                $value = qtranxf_useCurrentLanguageIfNotFoundUseDefaultLanguage( $value );
+            } else {
+                $value = qtranxf_useCurrentLanguageIfNotFoundShowEmpty( $value );
+            }
             $value = maybe_unserialize( $value );
         }
 

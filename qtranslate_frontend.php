@@ -120,7 +120,7 @@ function qtranxf_wp_get_nav_menu_items( $items, $menu, $args ) {
                             break;
                     }
                 } else {
-                    $item_title = qtranxf_use_language( $language, $item_title, false, true );
+                    $item_title = qtranxf_use_language( $language, $item_title );
                 }
             }
             if ( empty( $item_title ) ) {

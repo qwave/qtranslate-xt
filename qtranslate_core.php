@@ -8,7 +8,7 @@ require_once( QTRANSLATE_DIR . '/modules/qtx_modules_handler.php' );
 function qtranxf_init_language() {
     global $q_config, $pagenow;
 
-    qtranxf_loadConfig();
+    qtranxf_load_config();
 
     // 'url_info' hash is not for external use, it is subject to change at any time.
     // 'url_info' is preserved on reloadConfig
@@ -452,8 +452,19 @@ function qtranxf_detect_language_front( &$url_info ) {
 function qtranxf_setcookie_language( $lang, $cookie_name, $cookie_path ) {
     global $q_config;
 
-    // only meant for server-side, set 'httponly' flag
-    setcookie( $cookie_name, $lang, strtotime( '+1year' ), $cookie_path, null, $q_config['use_secure_cookie'], true );
+    // SameSite only available with options API from PHP 7.3.0
+    if ( version_compare( PHP_VERSION, '7.3.0' ) >= 0 ) {
+        setcookie( $cookie_name, $lang, [
+            'expires'  => strtotime( '+1year' ),
+            'path'     => $cookie_path,
+            'secure'   => $q_config['use_secure_cookie'],
+            'httponly' => true,
+            'samesite' => QTX_COOKIE_SAMESITE
+        ] );
+    } else {
+        // only meant for server-side, set 'httponly' flag
+        setcookie( $cookie_name, $lang, strtotime( '+1year' ), $cookie_path, null, $q_config['use_secure_cookie'], true );
+    }
 }
 
 function qtranxf_set_language_cookie( $lang ) {
@@ -731,7 +742,13 @@ function qtranxf_is_permalink_structure_query() {
     return empty( $permalink_structure ) || strpos( $permalink_structure, '?' ) !== false || strpos( $permalink_structure, 'index.php' ) !== false;
 }
 
+
 function qtranxf_loadConfig() {
+    _deprecated_function( __FUNCTION__, '3.10.0', 'qtranxf_load_config' );
+    qtranxf_load_config();
+}
+
+function qtranxf_load_config() {
     global $qtranslate_options, $q_config;
     qtranxf_set_default_options( $qtranslate_options );
 
@@ -835,7 +852,8 @@ function qtranxf_loadConfig() {
     /**
      * Opportunity to load additional front-end features.
      */
-    do_action( 'qtranslate_loadConfig' );
+    do_action( 'qtranslate_load_config' );
+    do_action_deprecated( 'qtranslate_loadConfig', array(), '3.10.0', 'qtranslate_load_config' );
 }
 
 // check if it is a link to an ignored file type
@@ -912,7 +930,7 @@ function qtranxf_url_del_language( &$urlinfo ) {
             if ( ! empty( $urlinfo['wp-path'] ) && preg_match( "!^/($lang_code)(/|$)!i", $urlinfo['wp-path'], $match ) ) {
                 if ( qtranxf_isEnabled( $match[1] ) ) {
                     // found language information, remove it
-                    $urlinfo['wp-path'] = substr( $urlinfo['wp-path'], 3 );
+                    $urlinfo['wp-path'] = substr( $urlinfo['wp-path'], strlen( $match[1] ) + 1 );
                 }
             }
             break;

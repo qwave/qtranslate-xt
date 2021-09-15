@@ -43,6 +43,11 @@ function qtranxf_admin_set_default_options( &$options ) {
 }
 
 function qtranxf_admin_loadConfig() {
+    _deprecated_function( __FUNCTION__, '3.10.0', 'qtranxf_admin_load_config' );
+    qtranxf_admin_load_config();
+}
+
+function qtranxf_admin_load_config() {
     global $q_config, $qtranslate_options;
     qtranxf_admin_set_default_options( $qtranslate_options );
 
@@ -72,7 +77,8 @@ function qtranxf_admin_loadConfig() {
     }
 
     // opportunity to load additional admin features
-    do_action( 'qtranslate_admin_loadConfig' );
+    do_action( 'qtranslate_admin_load_config' );
+    do_action_deprecated( 'qtranslate_admin_loadConfig', array(), '3.10.0', 'qtranslate_admin_load_config' );
 
     qtranxf_add_conf_filters();
 }

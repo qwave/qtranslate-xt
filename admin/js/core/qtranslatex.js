@@ -9,6 +9,7 @@
  * - qTranslateConfig.js - is a place where custom Java script functions are stored, if needed.
  * Read Integration Guide: https://github.com/qtranslate/qtranslate-xt/wiki/Integration-Guide for more information.
  */
+'use strict';
 import {qtranxj_ce} from './dom';
 import {qtranxj_get_split_blocks, qtranxj_split, qtranxj_split_blocks} from './qblocks';
 import {getStoredEditLanguage, storeEditLanguage} from './store';
@@ -19,6 +20,14 @@ const qTranslateConfig = window.qTranslateConfig;
 
 const qTranslateX = function (pg) {
     const qtx = this;
+
+    /**
+     * Internal state of hooks and languageSwitch, not exposed
+     */
+    const contentHooks = {};
+    const displayHookNodes = [];
+    const displayHookAttrs = [];
+    let languageSwitchInitialized = false;
 
     /**
      * Designed as interface for other plugin integration. The documentation is available at
@@ -61,23 +70,6 @@ const qTranslateX = function (pg) {
         return !!qTranslateConfig.language_config[lang];
     };
 
-    if (qTranslateConfig.LSB) {
-        qTranslateConfig.activeLanguage = getStoredEditLanguage();
-        if (!qTranslateConfig.activeLanguage || !this.isLanguageEnabled(qTranslateConfig.activeLanguage)) {
-            qTranslateConfig.activeLanguage = qTranslateConfig.language;
-            if (this.isLanguageEnabled(qTranslateConfig.activeLanguage)) {
-                storeEditLanguage(qTranslateConfig.activeLanguage);
-            } else {
-                // fallback to single mode
-                qTranslateConfig.LSB = false;
-            }
-        }
-    } else {
-        qTranslateConfig.activeLanguage = qTranslateConfig.language;
-        // no need to store for the current mode, but just in case the LSB are used later
-        storeEditLanguage(qTranslateConfig.activeLanguage);
-    }
-
     /**
      * Designed as interface for other plugin integration. The documentation is available at
      * https://github.com/qtranslate/qtranslate-xt/wiki/Integration-Guide
@@ -88,8 +80,6 @@ const qTranslateX = function (pg) {
         return qTranslateConfig.activeLanguage;
     };
 
-    const contentHooks = {};
-
     /**
      * Designed as interface for other plugin integration. The documentation is available at
      * https://github.com/qtranslate/qtranslate-xt/wiki/Integration-Guide
@@ -99,6 +89,29 @@ const qTranslateX = function (pg) {
     this.hasContentHook = function (id) {
         return contentHooks[id];
     };
+
+    /**
+     * Attach an input field to an existing content hook.
+     *
+     * Usually, this function is called internally for an input field edited by the user.
+     * In some cases (e.g. widgets), the editable fields are different from those containing
+     * the translatable content. This function allows to attach them to the hook.
+     * The single content field initially attached is not updated anymore but the hidden fields
+     * storing each language content are still updated.
+     * @see addContentHook
+     * @see attachEditorHook
+     *
+     * @param inputField field editable by the user
+     * @param contentId optional element ID to override the content hook key (default: input ID)
+     */
+    this.attachContentHook = function (inputField, contentId) {
+        const hook = contentHooks[contentId ? contentId : inputField.id];
+        if (!hook) {
+            return;
+        }
+        inputField.classList.add('qtranxs-translatable');
+        hook.contentField = inputField;
+    }
 
     /**
      * Designed as interface for other plugin integration. The documentation is available at
@@ -127,14 +140,19 @@ const qTranslateX = function (pg) {
         }
 
         if (!fieldName) {
-            if (!inputField.name) return false;
+            if (!inputField.name) {
+                console.error('Missing name in field', inputField);
+                return false;
+            }
             fieldName = inputField.name;
         }
+
         if (inputField.id) {
             if (contentHooks[inputField.id]) {
                 if ($.contains(document, inputField))
                     return contentHooks[inputField.id];
                 // otherwise some Java script already removed previously hooked element
+                console.warn('No input field with id=', inputField.id);
                 qtx.removeContentHook(inputField);
             }
         } else if (!contentHooks[fieldName]) {
@@ -147,16 +165,10 @@ const qTranslateX = function (pg) {
             } while (contentHooks[inputField.id]);
         }
 
-        /**
-         * Highlighting the translatable fields
-         * @since 3.2-b3
-         */
-        inputField.className += ' qtranxs-translatable';
-
         const hook = contentHooks[inputField.id] = {};
         hook.name = fieldName;
-        hook.contentField = inputField;
         hook.lang = qTranslateConfig.activeLanguage;
+        qtx.attachContentHook(inputField);
 
         let qtxPrefix;
         if (encode) {
@@ -203,6 +215,7 @@ const qTranslateX = function (pg) {
             contents = qtranxj_split(inputField.value);
             // Substitute the current ML content with translated content for the current language
             inputField.value = contents[hook.lang];
+
             // Insert translated content for each language before the current field
             for (const lang in contents) {
                 const text = contents[lang];
@@ -337,22 +350,6 @@ const qTranslateX = function (pg) {
         }
     };
 
-    const removeContentHookH = function (hook) {
-        if (!hook)
-            return false;
-        if (hook.sepfield)
-            $(hook.sepfield).remove();
-        const contents = {};
-        for (const lang in hook.fields) {
-            const f = hook.fields[lang];
-            contents[lang] = f.value;
-            $(f).remove();
-        }
-        $(hook.contentField).removeClass('qtranxs-translatable');
-        delete contentHooks[hook.contentField.id];
-        return contents;
-    };
-
     /**
      * Designed as interface for other plugin integration. The documentation is available at
      * https://github.com/qtranslate/qtranslate-xt/wiki/Integration-Guide
@@ -360,12 +357,29 @@ const qTranslateX = function (pg) {
      * @since 3.3
      */
     this.removeContentHook = function (inputField) {
-        if (!inputField || !inputField.id || !contentHooks[inputField.id])
+        if (!inputField || !inputField.id) {
             return false;
+        }
         const hook = contentHooks[inputField.id];
-        removeContentHookH(hook);
-        // @since 3.2.9.8 - hook.contents -> hook.fields
-        $(inputField).removeClass('qtranxs-translatable');
+        if (!hook) {
+            return false;
+        }
+        if (hook.sepfield) {
+            $(hook.sepfield).remove();
+        }
+        for (const lang in hook.fields) {
+            const langField = hook.fields[lang];
+            $(langField).remove();
+        }
+        if (hook.mce) {
+            const editor = hook.mce;
+            editor.getContainer().classList.remove('qtranxs-translatable');
+            editor.getElement().classList.remove('qtranxs-translatable');
+        }
+        // The current content field may not be the same as the input field, in case it was re-attached (e.g. widgets)
+        hook.contentField.classList.remove('qtranxs-translatable');
+        delete contentHooks[inputField.id];
+        inputField.classList.remove('qtranxs-translatable');
         return true;
     };
 
@@ -375,11 +389,7 @@ const qTranslateX = function (pg) {
      * Re-create a hook, after a piece of HTML is dynamically replaced with a custom Java script.
      */
     this.refreshContentHook = function (inputField) {
-        if (!inputField || !inputField.id)
-            return false;
-        const hook = contentHooks[inputField.id];
-        if (hook)
-            removeContentHookH(hook);
+        qtx.removeContentHook(inputField);
         return qtx.addContentHook(inputField);
     };
 
@@ -416,7 +426,6 @@ const qTranslateX = function (pg) {
     /**
      * @since 3.2.7
      */
-    const displayHookNodes = [];
     const addDisplayHookNode = function (node) {
         if (!node.nodeValue)
             return 0;
@@ -435,7 +444,6 @@ const qTranslateX = function (pg) {
     /**
      * @since 3.2.7
      */
-    const displayHookAttrs = [];
     const addDisplayHookAttr = function (node, attr) {
         if (!node.hasAttribute(attr)) return 0;
         const value = node.getAttribute(attr);
@@ -504,12 +512,12 @@ const qTranslateX = function (pg) {
         return qtx.addDisplayHook(document.getElementById(id));
     };
 
-    const updateTinyMCE = function (hook) {
+    const updateMceEditorContent = function (hook) {
         let text = hook.contentField.value;
-        if (hook.wpautop && window.switchEditors) {
+        if (hook.mce.settings.wpautop && window.switchEditors) {
             text = window.switchEditors.wpautop(text);
         }
-        hook.mce.setContent(text, {format: 'html'});
+        hook.mce.setContent(text);
     };
 
     const onTabSwitch = function (lang) {
@@ -535,9 +543,9 @@ const qTranslateX = function (pg) {
             return;
         for (const key in contentHooks) {
             const hook = contentHooks[key];
-            const mce = hook.mce && !hook.mce.hidden;
-            if (mce) {
-                hook.mce.save({format: 'html'});
+            const visualMode = hook.mce && !hook.mce.hidden;
+            if (visualMode) {
+                hook.mce.save();
             }
 
             const text = hook.contentField.value.trim();
@@ -551,9 +559,12 @@ const qTranslateX = function (pg) {
                     // since 3.2.7
                     hook.contentField.placeholder = '';
                 }
+
                 hook.contentField.value = value;
-                if (mce) {
-                    updateTinyMCE(hook);
+                // Some widgets such as text-widget sync the widget content on 'change' event on the input field
+                $(hook.contentField).trigger('change');
+                if (visualMode) {
+                    updateMceEditorContent(hook);
                 }
             } else {
                 // value is ML, fill out values per language
@@ -646,8 +657,7 @@ const qTranslateX = function (pg) {
             const className = qTranslateConfig.custom_field_classes[i];
             qtx.addContentHooksByClass(className);
         }
-        if (qTranslateConfig.LSB)
-            qtx.addContentHooksTinyMCE();
+        qtx.addContentHooksTinyMCE();
     };
 
     /**
@@ -764,66 +774,51 @@ const qTranslateX = function (pg) {
         }
     };
 
-    /** Link a TinyMCE editor with translatable content. The editor should be initialized for TinyMCE. */
-    const setEditorHooks = function (editor) {
+    /**
+     * Link a TinyMCE editor with translatable content.
+     *
+     * Usually, this function is called internally for an input field edited by the user.
+     * In some cases (e.g. widgets), the editable fields are different from those containing
+     * the translatable content. This function allows to attach them to the hook.
+     * The single content field initially attached is not updated anymore but the hidden fields
+     * storing each language content are still updated.
+     * @see attachContentHook
+     *
+     * @param editor tinyMCE editor, should be initialized for TinyMCE
+     * @param contentId optional element ID to override the content hook key (default: input ID)
+     * @return hook
+     */
+    this.attachEditorHook = function (editor, contentId) {
         if (!editor.id)
-            return;
-        const hook = contentHooks[editor.id];
+            return null;
+        // The MCE editor can be linked to translatable content having a different ID, e.g. for widgets
+        if (!contentId) {
+            contentId = editor.id;
+        }
+        const hook = contentHooks[contentId];
         if (!hook)
-            return;
+            return null;
+        // The hook may have been created for a different content field, e.g. for widgets
+        // The main content field should always match the editor ID so that its value is synced on tab switch
+        if (contentId !== editor.id) {
+            hook.contentField = document.getElementById(editor.id);
+        }
         if (hook.mce) {
-            return;  // already initialized for qTranslate
+            return hook;  // already initialized for qTranslate
         }
         hook.mce = editor;
 
-        /**
-         * Highlighting the translatable fields
-         * @since 3.2-b3
-         */
-        editor.getContainer().className += ' qtranxs-translatable';
-        editor.getElement().className += ' qtranxs-translatable';
+        editor.getContainer().classList.add('qtranxs-translatable');
+        editor.getElement().classList.add('qtranxs-translatable');
 
-        let updateTinyMCEonInit = hook.updateTinyMCEonInit;
-        if (updateTinyMCEonInit == null) {
-            // 'tmce-active' or 'html-active' was not provided on the wrapper
-            const textEditor = editor.getContent({format: 'html'}).replace(/\s+/g, '');
-            const textHook = hook.contentField.value.replace(/\s+/g, '');
-            /**
-             * @since 3.2.9.8 - this is an ugly trick.
-             * Before this version, it was working relying on properly timed synchronisation of the page loading process,
-             * which did not work correctly in some browsers like IE or MAC OS, for example.
-             * Now, function addContentHooksTinyMCE is called in the footer scripts, before TinyMCE initialization, and it always sets
-             * tinyMCEPreInit.mceInit, which causes to call this function, setEditorHooks, on TinyMCE initialization of each editor.
-             * However, function setEditorHooks gets invoked in two ways:
-             *
-             * 1. On page load, when Visual mode is initially on.
-             *      In this case we need to apply updateTinyMCE, which possibly applies wpautop.
-             *      Without q-X, WP applies wpautop in this case in php code in /wp-includes/class-wp-editor.php,
-             *      function 'editor', line "add_filter('the_editor_content', 'wp_richedit_pre');".
-             *      q-X disables this call in 'function qtranxf_the_editor',
-             *      since wpautop does not work correctly on multilingual values, and there is no filter to adjust its behaviour.
-             *      So, here we have to apply back wpautop to single-language value, which is achieved
-             *      with a call to updateTinyMCE(hook) below.
-             *
-             * 2. When user switches to Visual mode for the first time from a page, which was initially loaded in Text mode.
-             *      In this case, wpautop gets applied internally inside TinyMCE, and we do not need to call updateTinyMCE(hook) below.
-             *
-             * We could not figure out a good way to distinct within this function which way it was called,
-             * except this tricky comparison on the next line.
-             *
-             * If somebody finds out a better way, please let us know at https://github.com/qtranslate/qtranslate-xt/issues/.
-             */
-            updateTinyMCEonInit = textEditor !== textHook;
-        }
-        if (updateTinyMCEonInit) {
-            updateTinyMCE(hook);
-        }
         return hook;
     }
 
-    /** Sets hooks on HTML-loaded TinyMCE editors via tinyMCEPreInit.mceInit. */
+    /**
+     * Sets hooks on HTML-loaded TinyMCE editors via tinyMCEPreInit.mceInit.
+     */
     this.addContentHooksTinyMCE = function () {
-        if (!window.tinyMCEPreInit || !window.tinyMCE) {
+        if (!window.tinyMCEPreInit || qTranslateConfig.RAW) {
             return;
         }
         for (const key in contentHooks) {
@@ -831,43 +826,22 @@ const qTranslateX = function (pg) {
             if (hook.contentField.tagName !== 'TEXTAREA' || hook.mce || hook.mceInit || !tinyMCEPreInit.mceInit[key])
                 continue;
             hook.mceInit = tinyMCEPreInit.mceInit[key];
-            if (hook.mceInit.wpautop) {
-                hook.wpautop = hook.mceInit.wpautop;
-                const wrappers = tinymce.DOM.select('#wp-' + key + '-wrap');
-                if (wrappers && wrappers.length) {
-                    hook.wrapper = wrappers[0];
-                    if (hook.wrapper) {
-                        if (tinymce.DOM.hasClass(hook.wrapper, 'tmce-active'))
-                            hook.updateTinyMCEonInit = true;
-                        if (tinymce.DOM.hasClass(hook.wrapper, 'html-active'))
-                            hook.updateTinyMCEonInit = false;
-                        // otherwise hook.updateTinyMCEonInit stays undetermined
-                    }
-                }
-            } else {
-                hook.updateTinyMCEonInit = false;
-            }
             tinyMCEPreInit.mceInit[key].init_instance_callback = function (editor) {
-                setEditorHooks(editor);
+                qtx.attachEditorHook(editor);
             }
         }
     };
 
-    /** Adds more TinyMCE editors, which may have been initialized dynamically. */
+    /**
+     * Adds more TinyMCE editors, which may have been initialized dynamically.
+     */
     this.loadAdditionalTinyMceHooks = function () {
         if (window.tinyMCE) {
             tinyMCE.get().forEach(function (editor) {
-                setEditorHooks(editor);
+                qtx.attachEditorHook(editor);
             });
         }
     };
-
-    if (!qTranslateConfig.onTabSwitchFunctions)
-        qTranslateConfig.onTabSwitchFunctions = [];
-    if (!qTranslateConfig.onTabSwitchFunctionsSave)
-        qTranslateConfig.onTabSwitchFunctionsSave = [];
-    if (!qTranslateConfig.onTabSwitchFunctionsLoad)
-        qTranslateConfig.onTabSwitchFunctionsLoad = [];
 
     this.addLanguageSwitchListener = function (func) {
         qTranslateConfig.onTabSwitchFunctions.push(func);
@@ -974,18 +948,6 @@ const qTranslateX = function (pg) {
         return null;
     };
 
-    if (typeof (pg.addContentHooks) == "function")
-        pg.addContentHooks(this);
-
-    if (qTranslateConfig.page_config && qTranslateConfig.page_config.forms)
-        addPageHooks(qTranslateConfig.page_config.forms);
-
-    addMultilingualHooks();
-
-    if (!displayHookNodes.length && !displayHookAttrs.length && !Object.keys(contentHooks).length) {
-        return;
-    }
-
     this.onLoadLanguage = function (lang, langFrom) {
         const onTabSwitchFunctionsLoad = qTranslateConfig.onTabSwitchFunctionsLoad;
         for (let i = 0; i < onTabSwitchFunctionsLoad.length; ++i) {
@@ -1078,16 +1040,17 @@ const qTranslateX = function (pg) {
         let changed = false;
         for (const key in contentHooks) {
             const hook = contentHooks[key];
-            const mce = hook.mce && !hook.mce.hidden;
-            let value = mce ? hook.mce.getContent({format: 'html'}) : hook.contentField.value;
+            const visualMode = hook.mce && !hook.mce.hidden;
+            let value = visualMode ? hook.mce.getContent() : hook.contentField.value;
             if (value)
                 continue; // do not overwrite existent content
             value = hook.fields[langFrom].value;
             if (!value)
                 continue;
             hook.contentField.value = value;
-            if (mce)
-                updateTinyMCE(hook);
+            if (visualMode) {
+                updateMceEditorContent(hook);
+            }
             changed = true;
         }
         if (changed)
@@ -1156,23 +1119,19 @@ const qTranslateX = function (pg) {
         if (!insideElems.length)
             return; // consistency check in case WP did some changes
 
-        metaBox.className += ' closed';
+        metaBox.classList.add('closed');
         $(metaBox).find('.hndle').remove(); // original h3 element is replaced with span below
 
         const span = document.createElement('span');
         metaBox.insertBefore(span, insideElems[0]);
-        span.className = 'hndle ui-sortable-handle';
+        span.classList.add('hndle', 'ui-sortable-handle');
 
         const langSwitchWrap = qtx.createSetOfLSBwith(qTranslateConfig.lsb_style_wrap_class);
         span.appendChild(langSwitchWrap);
         $('#qtranxs-meta-box-lsb .hndle').unbind('click.postboxes');
     };
 
-    if (qTranslateConfig.LSB) {
-        // additional initialization
-        this.addContentHooksTinyMCE();
-        setupMetaBoxLSB();
-
+    const setupAnchorsLSB = function () {
         // create sets of LSB
         const anchors = [];
         if (qTranslateConfig.page_config && qTranslateConfig.page_config.anchors) {
@@ -1216,15 +1175,74 @@ const qTranslateX = function (pg) {
                 anchor.target.insertBefore(langSwitchWrap, null);
             }
         }
+    };
 
-        /**
-         * @since 3.2.4 Synchronization of multiple sets of Language Switching Buttons
-         */
-        this.addLanguageSwitchListener(onTabSwitch);
-        if (pg.onTabSwitch) {
-            this.addLanguageSwitchListener(pg.onTabSwitch);
+    /**
+     * Setup the language switching buttons, meta box and listeners.
+     *
+     * Usually, this is called internally after the display and content hooks have been added.
+     * However some pages may initialize the hooks later on events (e.g. widget-added).
+     * Switching buttons should only be created if there is at least one hook, so this offers
+     * the possibility to setup the language switch dynamically later.
+     */
+    this.setupLanguageSwitch = function () {
+        if (languageSwitchInitialized || !qTranslateConfig.LSB) {
+            return;
         }
+        if (!displayHookNodes.length && !displayHookAttrs.length && !Object.keys(contentHooks).length) {
+            return;
+        }
+
+        setupMetaBoxLSB();
+        setupAnchorsLSB();
+        // Synchronization of multiple sets of Language Switching Buttons
+        qtx.addLanguageSwitchListener(onTabSwitch);
+        if (pg.onTabSwitch) {
+            qtx.addLanguageSwitchListener(pg.onTabSwitch);
+        }
+
+        languageSwitchInitialized = true;
     }
+
+    const initialize = function () {
+        if (qTranslateConfig.LSB) {
+            qTranslateConfig.activeLanguage = getStoredEditLanguage();
+            if (!qTranslateConfig.activeLanguage || !qtx.isLanguageEnabled(qTranslateConfig.activeLanguage)) {
+                qTranslateConfig.activeLanguage = qTranslateConfig.language;
+                if (qtx.isLanguageEnabled(qTranslateConfig.activeLanguage)) {
+                    storeEditLanguage(qTranslateConfig.activeLanguage);
+                } else {
+                    // fallback to single mode
+                    qTranslateConfig.LSB = false;
+                }
+            }
+        } else {
+            qTranslateConfig.activeLanguage = qTranslateConfig.language;
+            // no need to store for the current mode, but just in case the LSB are used later
+            storeEditLanguage(qTranslateConfig.activeLanguage);
+        }
+
+        if (!qTranslateConfig.onTabSwitchFunctions)
+            qTranslateConfig.onTabSwitchFunctions = [];
+        if (!qTranslateConfig.onTabSwitchFunctionsSave)
+            qTranslateConfig.onTabSwitchFunctionsSave = [];
+        if (!qTranslateConfig.onTabSwitchFunctionsLoad)
+            qTranslateConfig.onTabSwitchFunctionsLoad = [];
+
+        if (typeof (pg.addContentHooks) == "function")
+            pg.addContentHooks(qtx);
+
+        if (qTranslateConfig.page_config && qTranslateConfig.page_config.forms)
+            addPageHooks(qTranslateConfig.page_config.forms);
+
+        addMultilingualHooks();
+
+        qtx.addContentHooksTinyMCE();
+
+        qtx.setupLanguageSwitch();
+    };
+
+    initialize();
 };
 
 /**
@@ -1243,12 +1261,3 @@ qTranslateConfig.js.get_qtx = function () {
         qTranslateConfig.qtx = new qTranslateX(qTranslateConfig.js);
     return qTranslateConfig.qtx;
 };
-
-// With jQuery3 ready handlers fire asynchronously and may be fired after load.
-// See: https://github.com/jquery/jquery/issues/3194
-$(window).on('load', function () {
-    // qtx may already be initialized (see 'wp_tiny_mce_init' for the Classic Editor)
-    const qtx = qTranslateConfig.js.get_qtx();
-    // Setup hooks for additional TinyMCE editors initialized dynamically
-    qtx.loadAdditionalTinyMceHooks();
-});

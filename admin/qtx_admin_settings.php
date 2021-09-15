@@ -206,11 +206,13 @@ class QTX_Admin_Settings {
         global $q_config;
 
         $admin_config = $q_config['admin_config'];
-        $admin_config = apply_filters( 'qtranslate_load_admin_page_config', $admin_config );
-        $admin_config = apply_filters( 'i18n_admin_config', $admin_config );
+        $admin_config = apply_filters( 'qtranslate_admin_config', $admin_config );
+        $admin_config = apply_filters_deprecated( 'i18n_admin_config', array( $admin_config ), '3.10.0', 'qtranslate_admin_config' );
+        $admin_config = apply_filters_deprecated( 'qtranslate_load_admin_page_config', array( $admin_config ), '3.10.0', 'qtranslate_admin_config' );
 
         $front_config = $q_config['front_config'];
-        $front_config = apply_filters( 'i18n_front_config', $front_config );
+        $front_config = apply_filters( 'qtranslate_front_config', $front_config );
+        $front_config = apply_filters_deprecated( 'i18n_front_config', array( $front_config ), '3.10.0', 'qtranslate_front_config' );
 
         $configs                 = array();
         $configs['vendor']       = 'combined effective configuration';
@@ -224,16 +226,16 @@ class QTX_Admin_Settings {
         </p>
         <h3 class="heading"><?php _e( 'Configuration Inspector', 'qtranslate' ) ?></h3>
         <p class="qtranxs_explanation">
-            <?php printf( __( 'Review a combined JSON-encoded configuration as loaded from options %s and %s, as well as from the theme and other plugins via filters %s and %s.', 'qtranslate' ), '"' . __( 'Configuration Files', 'qtranslate' ) . '"', '"' . __( 'Custom Configuration', 'qtranslate' ) . '"', '"i18n_admin_config"', '"i18n_front_config"' );
+            <?php printf( __( 'Review a combined JSON-encoded configuration as loaded from options %s and %s, as well as from the theme and other plugins via filters %s and %s.', 'qtranslate' ), '"' . __( 'Configuration Files', 'qtranslate' ) . '"', '"' . __( 'Custom Configuration', 'qtranslate' ) . '"', '"qtranslate_admin_config"', '"qtranslate_front_config"' );
             echo ' ';
             printf( __( 'Please, read %sIntegration Guide%s for more information.', 'qtranslate' ), '<a href="https://github.com/qtranslate/qtranslate-xt/wiki/Integration-Guide" target="_blank">', '</a>' ); ?></p>
         <p class="qtranxs_explanation">
             <textarea class="widefat" rows="30">
-                <?php echo esc_textarea( str_replace( '[]', '{}', qtranxf_json_encode( $configs ) ) ); ?>
+                <?php echo esc_textarea( str_replace( '[]', '{}', json_encode( $configs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) ) ); ?>
             </textarea>
         </p>
         <p class="qtranxs-notes">
-            <?php printf( __( 'Note to developers: ensure that front-end filter %s is also active on admin side, otherwise the changes it makes will not show up here. Having this filter active on admin side does not affect admin pages functionality, except this field.', 'qtranslate' ), '"i18n_front_config"' ) ?>
+            <?php printf( __( 'Note to developers: ensure that front-end filter %s is also active on admin side, otherwise the changes it makes will not show up here. Having this filter active on admin side does not affect admin pages functionality, except this field.', 'qtranslate' ), '"qtranslate_front_config"' ) ?>
         </p>
         <p class="qtranxs-notes">
             <a href="<?php echo $this->options_uri . '#integration' ?>"><?php _e( 'back to configuration page', 'qtranslate' ) ?></a>
@@ -758,13 +760,17 @@ class QTX_Admin_Settings {
             <tr>
                 <th scope="row"><?php _e( 'Custom Configuration', 'qtranslate' ) ?></th>
                 <td><label for="qtranxs_json_custom_i18n_config"
-                           class="qtranxs_explanation"><?php printf( __( 'Additional custom JSON-encoded configuration of %s for all admin pages. It is processed after all files from option "%s" are loaded, providing opportunity to add or to override configuration tokens as necessary.', 'qtranslate' ), 'qTranslate&#8209;XT', __( 'Configuration Files', 'qtranslate' ) ); ?></label>
+                           class="qtranxs_explanation"><?php
+                        if ( ! empty( $q_config['custom_i18n_config'] ) ) {
+                            echo( '<p class="qtranxs-deprecated">' . __( 'Deprecated', 'qtranslate' ) . '</p>' );
+                        }
+                        printf( __( 'Additional custom JSON-encoded configuration of %s for all admin pages. It is processed after all files from option "%s" are loaded, providing opportunity to add or to override configuration tokens as necessary.', 'qtranslate' ), 'qTranslate&#8209;XT', __( 'Configuration Files', 'qtranslate' ) ); ?></label>
                     <br/><textarea name="json_custom_i18n_config" id="qtranxs_json_custom_i18n_config"
                                    rows="4"
                                    style="width:100%"><?php if ( isset( $_POST['json_custom_i18n_config'] ) ) {
                             echo sanitize_text_field( stripslashes( $_POST['json_custom_i18n_config'] ) );
                         } else if ( ! empty( $q_config['custom_i18n_config'] ) )
-                            echo qtranxf_json_encode( $q_config['custom_i18n_config'] ) ?></textarea>
+                            echo json_encode( $q_config['custom_i18n_config'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) ?></textarea>
                     <p class="qtranxs-notes"><?php printf( __( 'It would make no difference, if the content of this field is stored in a file, which name is listed last in option "%s". Therefore, this field only provides flexibility for the sake of convenience.', 'qtranslate' ), __( 'Configuration Files', 'qtranslate' ) );
                         echo ' ';
                         printf( __( 'Please, read %sIntegration Guide%s for more information.', 'qtranslate' ), '<a href="https://github.com/qtranslate/qtranslate-xt/wiki/Integration-Guide" target="_blank">', '</a>' );

@@ -1,11 +1,10 @@
 /* executed for 
  /wp-admin/edit-tags.php (without action=edit)
 */
+'use strict';
 const $ = jQuery;
 
-$(function () {
-    const qtx = qTranslateConfig.js.get_qtx();
-
+$(document).on('qtxLoadAdmin:edit-tags', (event, qtx) => {
     const addDisplayHook = function (i, e) {
         qtx.addDisplayHook(e);
     };

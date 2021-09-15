@@ -1,3 +1,64 @@
+### 3.11.0
+Core
+* Enable language switch for text widget with TinyMCE editor (#1042, #529, #616, #912)
+* Disable the block-based widget editor with WordPress 5.8 (#1058, #1042)
+* Set cookies with explicit `SameSite=Lax` policy (#1053)
+* Fix URL conversion for 3-letter language code (#1035)
+* Fix uninitialized string offset in utils (#1047)
+* Refactor and fix `removeContentHook` (#1043)
+
+Localization
+* Update localization zh_CN (80%) (#1049)
+* Update localization ru_RU (45%) (#444)
+* Update localization sl_SI (53%) (#437)
+* Add localization nl_NL_formal (70%) (#416)
+* Update language names for km (85%) (#420)
+* Update POT template
+
+### 3.10.1
+Core
+* Add qtranxs-flag class to flags on frontend (#1015)
+* Remove obsolete wpautop hack for editor init (#1019)
+* Remove wpautop from hook fields and format specifier (#1024)
+* Remove Ajax qtranslate-fields collect as string (#1026)
+* Create internal QTX initialize function in JS
+* Use classList in JS instead of className or jQuery
+
+Yoast
+* Fix Yoast 'name' schema for WebPages (#1033)
+* Fix Yoast canonical URL (#1032)
+
+### 3.10.0
+Core
+* Major overhaul of Javascript builds
+  * New feature! Javascript bundled with Webpack and Babel (#990), production builds delivered in `dist`
+  * Update Wiki for [debugging Javascript](https://github.com/qtranslate/qtranslate-xt/wiki/Troubleshooting#debugging-javascript)
+  * Reorganize Javascript sources (#994)   
+  * Refactor source code with const let ES6 (#996), new jQuery wrappers (#998), rename variables (#1001)
+* Improve integration of [Custom Javscript](https://github.com/qtranslate/qtranslate-xt/wiki/Custom-Javascript)
+  * Refactor `js-exec` config entries with JS events (#1009) - allows fusion of fragmented scripts into prod bundle
+  * Deprecate `js-conf` and `javascript` config entries (#1000) - no more Javascript code in JSON configs
+* Deprecate custom JSON configuration user field (#1012)
+* Update hooks
+  * Rename filter `i18n_admin_config` -> `qtranslate_admin_config`
+  * Rename filter `i18n_front_config` -> `qtranslate_front_config`
+  * Deprecate duplicate filter `qtranslate_load_admin_page_config` (use `qtranslate_admin_config`)
+  * Rename config actions with underscores, e.g. `qtranslate_loadConfig` -> `qtranslate_load_config`
+  * Deprecate action `qtranslate_admin_css`
+  * Replace `admin_head` hook with `admin_enqueue_scripts`
+* Update functions
+  * Deprecate functions `qtranxf_json_encode`, `qtranxf_config_add_form`
+  * Rename config and utils functions with underscores, e.g. `qtranxf_loedConfig` -> `qtranxf_load_config`
+  * Delete functions deprecated in 3.7.3
+  * Delete internal functions `qtranxf_add_admin_head_js`, `qtranxf_add_admin_footer_js`, `qtranxf_clean_request_of`
+* Fix undefined `use_block_editor_for_post` for Gutenberg (#1004)
+
+ACF
+* Fix async qtx loading in ACF (#998)
+* Fix qtx and repeaterFieldRemove in ACF JS (#1006)
+* Fix visual editor switch with ACF tabs (#1007)
+* Refactor ACF js with ES6 const let (#997)
+
 ### 3.9.3
 Core
 * Fix Javascript init for Classic Editor with WP5.6 (#946, #931)

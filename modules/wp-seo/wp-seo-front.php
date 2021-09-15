@@ -4,6 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function qtranxf_wpseo_add_filters_front() {
+    add_filter( 'wpseo_canonical', 'qtranxf_checkCanonical', 10, 2 );
+
     # For reference: https://developer.yoast.com/customization/apis/metadata-api/
     $use_filters = array(
         # Generic presenters
@@ -26,6 +28,9 @@ function qtranxf_wpseo_add_filters_front() {
         if ( array_key_exists( 'description', $piece ) ) {
             $piece['description'] = qtranxf_useCurrentLanguageIfNotFoundUseDefaultLanguage( $piece['description'] );
         }
+        if ( array_key_exists( 'name', $piece ) ) {
+            $piece['name'] = qtranxf_useCurrentLanguageIfNotFoundUseDefaultLanguage( $piece['name'] );
+        }
 
         return $piece;
     }
@@ -38,5 +43,5 @@ function qtranxf_wpseo_add_filters_front() {
     }
 }
 
-// TODO: trigger this with a proper hook - i18n_front_config can't be used in modules, here it's too late!
+// TODO: trigger this with a proper hook - qtranslate_front_config can't be used in modules, here it's too late!
 qtranxf_wpseo_add_filters_front();

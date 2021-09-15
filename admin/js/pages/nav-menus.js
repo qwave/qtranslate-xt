@@ -1,11 +1,10 @@
 /* executed for
  /wp-admin/nav-menus.php
 */
+'use strict';
 const $ = jQuery;
 
-$(function () {
-    const qtx = qTranslateConfig.js.get_qtx();
-
+$(document).on('qtxLoadAdmin:nav-menus', (event, qtx) => {
     const addMenuItemHooks = function (li) {
         qtx.addContentHooksByClass('edit-menu-item-title', li);
         qtx.addContentHooksByClass('edit-menu-item-attr-title', li);
@@ -17,6 +16,7 @@ $(function () {
 
     const onAddMenuItem = function (menuMarkup) {
         const rx = /id="menu-item-(\d+)"/gi;
+        let matches;
         while ((matches = rx.exec(menuMarkup))) {
             const id = 'menu-item-' + matches[1];
             const li = document.getElementById(id);

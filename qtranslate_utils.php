@@ -16,24 +16,6 @@ function qtranxf_translate_wp( $string ) {
 }
 
 /**
- * @since 3.3.8.8
- */
-function qtranxf_plugin_basename() {
-    _deprecated_function( __FUNCTION__, '3.7.3', 'plugin_basename( QTRANSLATE_FILE )' );
-
-    return plugin_basename( QTRANSLATE_FILE );
-}
-
-/**
- * @since 3.3.2
- */
-function qtranxf_plugin_dirname() {
-    _deprecated_function( __FUNCTION__, '3.7.3', 'dirname( QTRANSLATE_DIR )' );
-
-    return dirname( QTRANSLATE_DIR );
-}
-
-/**
  * Compose path to a plugin folder relative to WP_CONTENT_DIR.
  * Takes into account linked folders in the path.
  * Works for plugin paths only. No trailing slash in the return string.
@@ -466,7 +448,7 @@ function qtranxf_getLanguageName( $lang = '' ) {
         // not loaded by default, since this place should not be hit frequently
         $locale = $q_config['locale'][ $q_config['language'] ];
         if ( ! load_textdomain( 'language-names', QTRANSLATE_DIR . '/lang/language-names/language-' . $locale . '.mo' ) ) {
-            if ( $locale[2] == '_' ) {
+            if ( strlen( $locale ) >= 2 && $locale[2] == '_' ) {
                 $locale = substr( $locale, 0, 2 );
                 load_textdomain( 'language-names', QTRANSLATE_DIR . '/lang/language-names/language-' . $locale . '.mo' );
             }
@@ -475,7 +457,7 @@ function qtranxf_getLanguageName( $lang = '' ) {
     $translations = get_translations_for_domain( 'language-names' );
     $locale       = $q_config['locale'][ $lang ];
     while ( ! isset( $translations->entries[ $locale ] ) ) {
-        if ( $locale[2] == '_' ) {
+        if ( strlen( $locale ) >= 2 && $locale[2] == '_' ) {
             $locale = substr( $locale, 0, 2 );
             if ( isset( $translations->entries[ $locale ] ) ) {
                 break;
@@ -613,14 +595,10 @@ function qtranxf_post_type() {
         return $post_type;
     }
     if ( $post && isset( $post->post_type ) ) {
-        $post_type = $post->post_type;
-
-        return $post_type;
+        return $post->post_type;
     }
     if ( isset( $_REQUEST['post_type'] ) ) {
-        $post_type = $_REQUEST['post_type'];
-
-        return $post_type;
+        return $_REQUEST['post_type'];
     }
 
     return null;
@@ -680,7 +658,10 @@ function qtranxf_merge_config( $cfg_all, $cfg ) {
 }
 
 /**
- * filters i18n configurations for the current page
+ * Parse i18n configurations, filtered for the current page URL and query.
+ * The post type is not filtered yet.
+ *
+ * @return array of active configurations, per post type
  */
 function qtranxf_parse_page_config( $config, $url_path, $url_query ) {
     global $q_config;
@@ -704,8 +685,10 @@ function qtranxf_parse_page_config( $config, $url_path, $url_query ) {
             continue;
         }
 
+        // Empty string key applies to all post types
         $post_type_key = '';
         if ( isset( $pgcfg['post_type'] ) ) {
+            // Store the post type(s) as a regex pattern
             if ( is_string( $pgcfg['post_type'] ) ) {
                 $post_type_key = $delimiter . $pgcfg['post_type'] . $delimiter;
                 unset( $pgcfg['post_type'] );
@@ -716,11 +699,13 @@ function qtranxf_parse_page_config( $config, $url_path, $url_query ) {
                 }
             }
         }
+
         if ( ! isset( $page_configs[ $post_type_key ] ) ) {
             $page_configs[ $post_type_key ] = array();
         }
         $page_config = &$page_configs[ $post_type_key ];
 
+        // Aggregate the page configs for this post type
         foreach ( $pgcfg as $key => $cfg ) {
             if ( empty( $cfg ) ) {
                 continue;
@@ -796,8 +781,18 @@ function qtranxf_parse_page_config( $config, $url_path, $url_query ) {
                 }
             }
         }
+
+        // Store all page config keys when selectors exist (pages or post_type)
+        if ( array_key_exists( 'pages', $pgcfg ) || ! empty( $post_type_key ) ) {
+            if ( ! isset ( $page_config['keys'] ) ) {
+                $page_config['keys'] = array( $pgkey );
+            } else {
+                $page_config['keys'][] = $pgkey;
+            }
+        }
     }
 
+    // Clean up empty configs
     foreach ( $page_configs as $post_type_key => &$page_config ) {
         if ( ! empty( $page_config ) ) {
             // clean up 'fields'

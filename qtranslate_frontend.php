@@ -21,7 +21,8 @@ function qtranxf_get_front_page_config() {
      *
      * @param (array) $front_config token 'front-config' of the configuration.
      */
-    $front_config = apply_filters( 'i18n_front_config', $front_config );
+    $front_config = apply_filters( 'qtranslate_front_config', $front_config );
+    $front_config = apply_filters_deprecated( 'i18n_front_config', array( $front_config ), '3.10.0', 'qtranslate_front_config' );
 
     $page_configs = qtranxf_parse_page_config( $front_config, $url_path, $url_query );
 
@@ -270,7 +271,7 @@ function qtranxf_add_language_menu_item( &$items, &$menu_order, &$itemid, $key, 
             }    // translators: Colon after a title. For example, in top item of Language Menu.
             $item->title .= '&nbsp;';
         }
-        $item->title .= '<img src="' . $flag_location . $q_config['flag'][ $toplang ] . '" alt="' . $q_config['language_name'][ $toplang ] . '" />';//.' '.__('Flag', 'qtranslate')
+        $item->title .= '<img class="qtranxs-flag" src="' . $flag_location . $q_config['flag'][ $toplang ] . '" alt="' . $q_config['language_name'][ $toplang ] . '" />';//.' '.__('Flag', 'qtranslate')
     }
     if ( empty( $item->attr_title ) ) {
         $item->attr_title = $q_config['language_name'][ $toplang ];
@@ -317,7 +318,7 @@ function qtranxf_add_language_menu_item( &$items, &$menu_order, &$itemid, $key, 
         $item->type_label       = 'Custom';
         $item->title            = '';
         if ( $flags ) {
-            $item->title = '<img src="' . $flag_location . $q_config['flag'][ $lang ] . '" alt="' . $q_config['language_name'][ $lang ] . '" />';
+            $item->title = '<img class="qtranxs-flag" src="' . $flag_location . $q_config['flag'][ $lang ] . '" alt="' . $q_config['language_name'][ $lang ] . '" />';
         }
         if ( $lang_names ) {
             if ( $flags ) {

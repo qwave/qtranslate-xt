@@ -2,6 +2,7 @@
  /wp-admin/post.php
  /wp-admin/post-new.php
 */
+'use strict';
 const $ = jQuery;
 
 const UrlMode = Object.freeze({
@@ -11,8 +12,7 @@ const UrlMode = Object.freeze({
    QTX_URL_DOMAINS: 4,
 });
 
-$(function () {
-    const qtx = qTranslateConfig.js.get_qtx();
+$(document).on('qtxLoadAdmin:post', (event, qtx) => {
     const convertURL = function (url, lang) {
         switch (qTranslateConfig.url_mode) {
             case UrlMode.QTX_URL_QUERY:
@@ -142,5 +142,4 @@ $(function () {
             window.location = window.location.origin + window.location.pathname + '?' + $.param(params);
         })
     }
-
 });

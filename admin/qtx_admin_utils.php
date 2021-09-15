@@ -160,24 +160,6 @@ function qtranxf_clean_request( $name ) {
     unset( $_REQUEST[ $name ] );
 }
 
-/**
- * @since 3.4.6.9
- */
-function qtranxf_clean_request_of( $type, $name ) {
-    unset( $_GET[ $type ][ $name ] );
-    unset( $_POST[ $type ][ $name ] );
-    unset( $_REQUEST[ $type ][ $name ] );
-    if ( empty( $_GET[ $type ] ) ) {
-        unset( $_GET[ $type ] );
-    }
-    if ( empty( $_POST[ $type ] ) ) {
-        unset( $_POST[ $type ] );
-    }
-    if ( empty( $_REQUEST[ $type ] ) ) {
-        unset( $_REQUEST[ $type ] );
-    }
-}
-
 function qtranxf_ensure_language_set( &$langs, $lang, $default_value = null ) {
     if ( ! empty( $langs[ $lang ] ) ) {
         return $langs[ $lang ];
@@ -198,6 +180,11 @@ function qtranxf_ensure_language_set( &$langs, $lang, $default_value = null ) {
 }
 
 function qtranxf_getLanguageEdit() {
+    _deprecated_function( __FUNCTION__, '3.10.0', 'qtranxf_get_edit_language' );
+    qtranxf_get_edit_language();
+}
+
+function qtranxf_get_edit_language() {
     global $q_config;
 
     if ( ! isset( $_REQUEST['qtranslate-edit-language'] ) ) {
@@ -212,7 +199,7 @@ function qtranxf_getLanguageEdit() {
     return $lang;
 }
 
-function qtranxf_languageColumnHeader( $columns ) {
+function qtranxf_language_column_header( $columns ) {
     $new_columns = array();
     if ( isset( $columns['cb'] ) ) {
         $new_columns['cb'] = '';
@@ -234,7 +221,7 @@ function qtranxf_languageColumnHeader( $columns ) {
     return array_merge( $new_columns, $columns );
 }
 
-function qtranxf_languageColumn( $column ) {
+function qtranxf_language_column( $column ) {
     global $q_config, $post;
     if ( $column == 'language' ) {
         $missing_languages   = null;
@@ -260,7 +247,12 @@ function qtranxf_languageColumn( $column ) {
             $available_languages_names = join( ', ', $available_languages_name );
             echo apply_filters( 'qtranslate_available_languages_names', $available_languages_names );
         }
-        do_action( 'qtranslate_languageColumn', $available_languages, $missing_languages );
+
+        do_action( 'qtranslate_language_column', $available_languages, $missing_languages );
+        do_action_deprecated( 'qtranslate_languageColumn', array(
+            $available_languages,
+            $missing_languages
+        ), '3.10.0', 'qtranslate_language_column' );
     }
 
     return $column;
@@ -347,35 +339,6 @@ if ( ! function_exists( 'qtranxf_trim_words' ) ) {
     }
 }
 
-/**
- * The same as core wp_htmledit_pre in /wp-includes/formatting.php,
- * but with last argument of htmlspecialchars $double_encode off,
- * which makes it to survive multiple applications from other plugins,
- * for example, "PS Disable Auto Formatting" (https://wordpress.org/plugins/ps-disable-auto-formatting/)
- * cited on support thread https://wordpress.org/support/topic/incompatibility-with-ps-disable-auto-formatting.
- * @since 2.9.8.9
- */
-if ( ! function_exists( 'qtranxf_htmledit_pre' ) ) {
-    function qtranxf_htmledit_pre( $output ) {
-        if ( ! empty( $output ) ) {
-            // convert only < > &
-            $output = htmlspecialchars( $output, ENT_NOQUOTES, get_option( 'blog_charset' ), false );
-        }
-
-        return apply_filters( 'htmledit_pre', $output );
-    }
-}
-
-function qtranxf_the_editor( $editor_div ) {
-    // remove wpautop, which causes unmatched <p> on combined language strings
-    if ( 'html' != wp_default_editor() ) {
-        remove_filter( 'the_editor_content', 'wp_richedit_pre' );
-        add_filter( 'the_editor_content', 'qtranxf_htmledit_pre', 99 );
-    }
-
-    return $editor_div;
-}
-
 /* @since 3.3.8.7 use filter 'admin_title' instead
  * function qtranxf_filter_options_general($value){
  * global $q_config;
@@ -394,9 +357,14 @@ function qtranxf_the_editor( $editor_div ) {
  */
 
 function qtranxf_updateGettextDatabases( $force = false, $only_for_language = '' ) {
+    _deprecated_function( __FUNCTION__, '3.10.0', 'qtranxf_update_gettext_databases' );
+    qtranxf_update_gettext_databases( $force, $only_for_language );
+}
+
+function qtranxf_update_gettext_databases( $force = false, $only_for_language = '' ) {
     require_once( QTRANSLATE_DIR . '/admin/qtx_update_gettext_db.php' );
 
-    return qtranxf_updateGettextDatabasesEx( $force, $only_for_language );
+    return qtranxf_update_gettext_databases_ex( $force, $only_for_language );
 }
 
 function qtranxf_add_conf_filters() {
@@ -411,8 +379,7 @@ function qtranxf_add_conf_filters() {
             break;
         case QTX_EDITOR_MODE_LSB:
         default:
-            // applied in /wp-includes/class-wp-editor.php
-            add_filter( 'the_editor', 'qtranxf_the_editor' );
+            // Nothing to do
             break;
     }
 }
@@ -421,7 +388,6 @@ function qtranxf_del_conf_filters() {
     remove_filter( 'gettext', 'qtranxf_gettext', 0 );
     remove_filter( 'gettext_with_context', 'qtranxf_gettext_with_context', 0 );
     remove_filter( 'ngettext', 'qtranxf_ngettext', 0 );
-    remove_filter( 'the_editor', 'qtranxf_the_editor' );
 }
 
 /**
@@ -477,16 +443,11 @@ add_action( 'add_meta_boxes', 'qtranxf_add_meta_box_LSB', 10, 2 );
  * @since 3.3
  */
 function qtranxf_post_type_optional( $post_type ) {
-    switch ( $post_type ) {
-        case 'revision':
-        case 'nav_menu_item':
-            return false; // no option for this type
-        default:
-            return true;
-    }
+    return ! in_array( $post_type, [ 'revision', 'nav_menu_item' ] );
 }
 
 function qtranxf_json_encode( $o ) {
+    _deprecated_function( __FUNCTION__, '3.10.0' );
     if ( version_compare( PHP_VERSION, '5.4.0' ) >= 0 ) {
         return json_encode( $o, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
     }
@@ -499,6 +460,7 @@ function qtranxf_json_encode( $o ) {
  * return reference to $page_config['forms'][$name]['fields']
  */
 function qtranxf_config_add_form( &$page_config, $name ) {
+    _deprecated_function( __FUNCTION__, '3.10.0' );
     if ( ! isset( $page_config['forms'][ $name ] ) ) {
         $page_config['forms'][ $name ] = array( 'fields' => array() );
     } else if ( ! isset( $page_config['forms'][ $name ]['fields'] ) ) {
@@ -590,7 +552,7 @@ function qtranxf_decode_name_value( $name_values ) {
     return $decoded;
 }
 
-add_filter( 'manage_posts_columns', 'qtranxf_languageColumnHeader' );
-add_filter( 'manage_posts_custom_column', 'qtranxf_languageColumn' );
-add_filter( 'manage_pages_columns', 'qtranxf_languageColumnHeader' );
-add_filter( 'manage_pages_custom_column', 'qtranxf_languageColumn' );
+add_filter( 'manage_posts_columns', 'qtranxf_language_column_header' );
+add_filter( 'manage_posts_custom_column', 'qtranxf_language_column' );
+add_filter( 'manage_pages_columns', 'qtranxf_language_column_header' );
+add_filter( 'manage_pages_custom_column', 'qtranxf_language_column' );

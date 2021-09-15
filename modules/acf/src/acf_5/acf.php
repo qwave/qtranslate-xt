@@ -54,13 +54,9 @@ class acf_qtranslate_acf_5 implements acf_qtranslate_acf_interface {
      *
      * @return array|mixed|string|void
      */
-    public function format_value( $value, $post_id, $field ) {
+    public function format_value( $value ) {
         if ( is_string( $value ) ) {
-            if ( $field['type'] === 'qtranslate_image' ) {
-                $value = qtranxf_useCurrentLanguageIfNotFoundUseDefaultLanguage( $value );
-            } else {
-                $value = qtranxf_useCurrentLanguageIfNotFoundShowEmpty( $value );
-            }
+            $value = qtranxf_useCurrentLanguageIfNotFoundShowEmpty( $value ); // restored to default - another filter moved into filter.php
             $value = maybe_unserialize( $value );
         }
 

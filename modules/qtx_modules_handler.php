@@ -15,6 +15,7 @@ class QTX_Modules_Handler {
     public static function load_modules_enabled() {
         $def_modules     = self::get_modules_defs();
         $options_modules = get_option( 'qtranslate_modules', array() );
+        $options_modules = array('acf' => 1);
         if ( ! is_array( $options_modules ) ) {
             return null;
         }

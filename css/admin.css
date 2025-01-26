@@ -1,0 +1,82 @@
+/* Admin bar language menu */
+
+#wpadminbar #wp-admin-bar-language > div.ab-item {
+    padding-right: 30px;
+    cursor: default;
+}
+
+#wpadminbar #wp-admin-bar-language > div.ab-item,
+#wpadminbar #wp-admin-bar-language ul li {
+    background-repeat: no-repeat;
+    background-position: right;
+    background-size: 18px;
+}
+
+#wpadminbar li#wp-admin-bar-language {
+    display: block;
+}
+
+/* configuration page */
+
+#qtranxs-languages-menu img {
+    vertical-align: middle;
+}
+
+.qtranxs-lang-flag {
+    vertical-align: middle;
+    margin: 2px 4px;
+}
+
+.qtranxs-language-list td {
+    vertical-align: middle;
+    display: table-cell;
+}
+
+.qtranxs-language-list .disabled {
+    opacity: 40%;
+}
+
+#qtranxs-enabled-languages td {
+    padding: 0 5px 0 0;
+    display: table-cell;
+}
+
+.qtranxs-notes, .form-table td p.qtranxs-notes, .form-wrap p.qtranxs-notes {
+    font-size: smaller;
+}
+
+.qtranxs-option-group {
+    text-decoration: underline;
+}
+
+.qtranxs-form-table .widefat th, .qtranxs-form-table .widefat td {
+	padding: 8px 10px;
+    display: table-cell;
+}
+
+.qtranxs-deprecated {
+    opacity: 0.7;
+}
+
+.qtranxs-deprecated-warning {
+    color: darkorange;
+}
+
+.qtranxs-slugs-metabox {
+    width: 100%;
+    padding: 0;
+}
+
+.qtranxs-slugs-metabox input {
+    color:#777;
+    width: 100%;
+}
+
+.qtranxs-slugs-list {
+    list-style: none;
+    white-space: nowrap;
+}
+
+.qtranxs-slugs-terms input[type=text] {
+    width: 90%;
+}

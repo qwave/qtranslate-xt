@@ -2,11 +2,11 @@
 
 module.exports = {
     entry: {
-        'main': './admin/js/main.js',
-        'editor-gutenberg': './admin/js/editor-gutenberg.js',
-        'notices': './admin/js/notices.js',
-        'options': './admin/js/options.js',
-        'modules/acf': './modules/acf/js/index.js',
+        'main': './js/main.js',
+        'block-editor': './js/block-editor.js',
+        'notices': './js/notices.js',
+        'options': './js/options.js',
+        'modules/acf': './js/acf/index.js',
     },
     output: {
         clean: true,

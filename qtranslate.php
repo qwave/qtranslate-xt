@@ -3,7 +3,9 @@
  * Plugin Name: qTranslate-XT
  * Plugin URI: https://github.com/qtranslate/qtranslate-xt/
  * Description: Adds user-friendly multilingual content support, stored in single post.
- * Version: 3.11.0
+ * Version: 3.15.2
+ * Requires at least: 5.0
+ * Requires PHP: 7.1
  * Author: qTranslate Community
  * Author URI: https://github.com/qtranslate/
  * Tags: multilingual, multi, language, admin, tinymce, Polyglot, bilingual, widget, switcher, professional, human, translation, service, qTranslate, zTranslate, mqTranslate, qTranslate Plus, WPML
@@ -12,14 +14,14 @@
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.txt
  * Author e-mail: herrvigg@gmail.com
- * Original Author: John Clause and Qian Qin (http://www.qianqin.de mail@qianqin.de)
+ * Original Author: John Clause and Qian Qin (https://www.qianqin.de mail@qianqin.de)
  * GitHub Plugin URI: https://github.com/qtranslate/qtranslate-xt/
  */
 /* Unused keywords (as described in https://codex.wordpress.org/Writing_a_Plugin):
  * Network: Optional. Whether the plugin can only be activated network wide. Example: true
  */
 /*
-	Copyright 2019-2020 qTranslate Community
+	Copyright 2019-2023 qTranslate Community
 
 	The statement below within this comment block is relevant to
 	this file as well as to all files in this folder and to all files
@@ -50,20 +52,20 @@ if ( ! function_exists( 'add_filter' ) ) {
     exit();
 }
 /**
- * The constants defined below are
- * Designed as interface for other plugin integration. The documentation is available at
- * https://github.com/qtranslate/qtranslate-xt/wiki/Integration-Guide/
+ * The constants defined below are designed as interface for other plugin integration.
+ * @see https://github.com/qtranslate/qtranslate-xt/wiki/Integration-Guide/
  */
-define( 'QTX_VERSION', '3.11.0' );
+const QTX_VERSION = '3.15.2';
 
 if ( ! defined( 'QTRANSLATE_FILE' ) ) {
     define( 'QTRANSLATE_FILE', __FILE__ );
     define( 'QTRANSLATE_DIR', __DIR__ );
 }
 
-require_once( QTRANSLATE_DIR . '/inc/qtx_class_translator.php' );
+require_once QTRANSLATE_DIR . '/src/init.php';
+add_action( 'plugins_loaded', 'qtranxf_init_language', 2 ); // User is not authenticated yet, high priority needed.
 
 if ( is_admin() ) {
-    require_once( QTRANSLATE_DIR . '/admin/qtx_activation_hook.php' );
+    require_once QTRANSLATE_DIR . '/src/admin/activation_hook.php';
     qtranxf_register_activation_hooks();
 }

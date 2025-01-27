@@ -51,7 +51,7 @@ class QTX_Module_Acf_Extended {
      */
     public function format_value( $value ) {
         if ( is_string( $value ) ) {
-            $value = qtranxf_useCurrentLanguageIfNotFoundUseDefaultLanguage( $value );
+            $value = qtranxf_useCurrentLanguageIfNotFoundShowEmpty( $value ); // restored to default - another filter moved into filter.php
             $value = maybe_unserialize( $value );
         }
 

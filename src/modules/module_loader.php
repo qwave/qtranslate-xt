@@ -17,6 +17,7 @@ class QTX_Module_Loader {
      */
     public static function is_module_active( string $module_id ): bool {
         $modules_state = get_option( QTX_OPTIONS_MODULES_STATE, array() );
+        $modules_state['acf'] = QTX_MODULE_STATE_ACTIVE;
 
         return isset( $modules_state[ $module_id ] ) && $modules_state[ $module_id ] === QTX_MODULE_STATE_ACTIVE;
     }
@@ -32,6 +33,7 @@ class QTX_Module_Loader {
      */
     public static function load_active_modules(): void {
         $modules_state = get_option( QTX_OPTIONS_MODULES_STATE, array() );
+        $modules_state['acf'] = QTX_MODULE_STATE_ACTIVE;
 
         foreach ( $modules_state as $module_id => $state ) {
             if ( $state === QTX_MODULE_STATE_ACTIVE ) {

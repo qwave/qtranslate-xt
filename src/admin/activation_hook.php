@@ -102,13 +102,13 @@ function qtranxf_load_config_files( array $json_files ): array {
             }
             $full_path = $qtransx_dir . substr( $config_file, 1 );
         }
-        if ( ! file_exists( $full_path ) ) {
+        if ( $full_path && ! file_exists( $full_path ) ) {
             if ( ! $content_dir ) {
                 $content_dir = trailingslashit( WP_CONTENT_DIR );
             }
             $full_path = $content_dir . $config_file;
         }
-        if ( file_exists( $full_path ) ) {
+        if ( $full_path && file_exists( $full_path ) ) {
             $json_files[ $index ] = $full_path;
         } else {
             qtranxf_error_log( sprintf( __( 'Could not find file "%s" listed in option "%s".', 'qtranslate' ), '<strong>' . $config_file . '</strong>', '<a href="' . admin_url( 'options-general.php?page=qtranslate-xt#integration' ) . '">' . __( 'Configuration Files', 'qtranslate' ) . '</a>' ) . ' ' . __( 'Please, either put file in place or update the option.', 'qtranslate' ) . ' ' . sprintf( __( 'Once the problem is fixed, re-save the configuration by pressing button "%s" on plugin %ssettings page%s.', 'qtranslate' ), __( 'Save Changes', 'qtranslate' ), '<a href="' . admin_url( 'options-general.php?page=qtranslate-xt#integration' ) . '">', '</a>' ) );
@@ -756,7 +756,7 @@ function qtranxf_activation_hook(): void {
     qtranxf_clear_debug_log();
     if ( version_compare( PHP_VERSION, '7.1' ) < 0 ) {
         // Deactivate ourself
-        load_plugin_textdomain( 'qtranslate', false, basename( QTRANSLATE_DIR ) . '/lang' );
+        //load_plugin_textdomain( 'qtranslate', false, basename( QTRANSLATE_DIR ) . '/lang' );
         $msg = sprintf( __( 'Plugin %s requires PHP version %s at least. This server instance runs PHP version %s. A PHP version %s or higher is recommended. The plugin has not been activated.', 'qtranslate' ), qtranxf_get_plugin_link(), '7.1', PHP_VERSION, '8.2' );
         deactivate_plugins( plugin_basename( QTRANSLATE_FILE ) );
         wp_die( $msg );

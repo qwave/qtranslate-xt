@@ -114,7 +114,7 @@ function qtranxf_init_language(): void {
     // Loading the plugin translations should not be done during plugins_loaded action since that is too early and prevent
     // other language related plugins from correctly hooking up with load_textdomain() function and doing whatever they want to do.
     // Calling load_plugin_textdomain() should be delayed until init action.
-    qtranxf_load_plugin_textdomain();
+    //qtranxf_load_plugin_textdomain();
 
     /**
      * allow other plugins to initialize whatever they need before the fork between front and admin.

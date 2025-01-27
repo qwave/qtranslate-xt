@@ -10,7 +10,7 @@ function qtranxf_get_front_page_config() {
     }
 
     global $q_config;
-    $url_path  = $q_config['url_info']['wp-path'];
+    $url_path  = $q_config['url_info']['wp-path'] ?? ;
     $url_query = $q_config['url_info']['query'] ?? '';
 
     $front_config = $q_config['front_config'];
@@ -113,7 +113,7 @@ function qtranxf_wp_get_nav_menu_items( $items, $menu, $args ) {
                             break;
                     }
                 } else {
-                    $item_title = qtranxf_use_language( $language, $item_title, false, ! $q_config['show_menu_alternative_language'] );
+                    $item_title = qtranxf_use_language( $language, $item_title );
                 }
             }
             if ( empty( $item_title ) ) {
